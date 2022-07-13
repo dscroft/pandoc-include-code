@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+
+from pandocfilters import toJSONFilter, Emph, Para, CodeBlock
+
+def file_contents( filename ):
+    with open( filename, "r" ) as f:
+        return f.read().split("\n")
+
+def dedent( contents, d=0 ):
+    return [ i[d:] for i in contents ]
+
+def behead(key, value, format, meta):
+    if key == "CodeBlock":# and value[0] >= 2:
+        [[ident, classes, keyvals], code] = value
+
+        #print( value )
+
+        contents = None
+        for i in keyvals:
+            if i[0] != "include": continue
+
+            contents = file_contents( i[-1] )
+
+        if contents is None:
+            return
+
+        try:
+            mn = min( ( int(i[-1]) for i in keyvals if i[0] == "startLine" ) ) -1
+        except ValueError: 
+            mn = 0
+
+        try:
+            mx = min( ( int(i[-1]) for i in keyvals if i[0] == "endLine" ) )
+        except ValueError:
+            mx = len( contents )
+
+        try:
+            d = min( ( int(i[-1]) for i in keyvals if i[0] == "dedent" ) )
+        except ValueError: 
+            d = 0
+
+        contents = dedent( contents, d )
+
+        return CodeBlock( [ident, classes, keyvals], "\n".join(contents[mn:mx]) )
+
+if __name__ == "__main__":
+  toJSONFilter(behead)
