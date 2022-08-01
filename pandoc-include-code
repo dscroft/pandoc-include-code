@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import os
+
 from pandocfilters import toJSONFilter, Emph, Para, CodeBlock
 
 def file_contents( filename ):
@@ -9,17 +11,24 @@ def file_contents( filename ):
 def dedent( contents, d=0 ):
     return [ i[d:] for i in contents ]
 
-def behead(key, value, format, meta):
+def get_path( meta ):
+    try:
+       path = meta["pandoc-include-code"]["c"]["path"]["c"][0]["c"]
+    except:
+       path = ""
+
+    return path
+
+def process(key, value, format, meta):
     if key == "CodeBlock":# and value[0] >= 2:
         [[ident, classes, keyvals], code] = value
-
-        #print( value )
 
         contents = None
         for i in keyvals:
             if i[0] != "include": continue
 
-            contents = file_contents( i[-1] )
+            filename = os.path.join( get_path( meta ), i[-1] )
+            contents = file_contents( filename )
 
         if contents is None:
             return
@@ -44,4 +53,4 @@ def behead(key, value, format, meta):
         return CodeBlock( [ident, classes, keyvals], "\n".join(contents[mn:mx]) )
 
 if __name__ == "__main__":
-  toJSONFilter(behead)
+  toJSONFilter(process)
